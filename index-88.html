@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FPV BUILD GENERATOR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:           #07080a;
+      --bg2:          #0d0e12;
+      --bg3:          #13151a;
+      --bg4:          #1a1c23;
+      --border:       #242630;
+      --border-hi:    #363844;
+      --accent:       #ff5200;
+      --accent2:      #ff7a3d;
+      --accent-glow:  rgba(255, 82, 0, 0.15);
+      --text:         #c8cad4;
+      --text-dim:     #585c6e;
+      --text-bright:  #eef0f7;
+      --mono:         'Share Tech Mono', monospace;
+      --head:         'Barlow Condensed', sans-serif;
+      --body:         'Barlow', sans-serif;
+      --green:        #22c55e;
+      --yellow:       #f59e0b;
+      --red:          #ef4444;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--body);
+      height: 100%;
+      overflow: hidden;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────── */
+    header {
+      height: 52px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 1.5rem;
+      gap: 1.2rem;
+      background: var(--bg);
+      position: relative;
+      z-index: 10;
+    }
+
+    .logo-wrap { display: flex; flex-direction: column; gap: 1px; }
+
+    .logo {
+      font-family: var(--head);
+      font-weight: 900;
+      font-size: 1.3rem;
+      letter-spacing: 0.12em;
+      color: var(--text-bright);
+      text-transform: uppercase;
+      line-height: 1;
+    }
+    .logo em { color: var(--accent); font-style: normal; }
+
+    .sub {
+      font-family: var(--mono);
+      font-size: 0.55rem;
+      letter-spacing: 0.18em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    .header-sep {
+      width: 1px;
+      height: 28px;
+      background: var(--border);
+    }
+
+    .header-meta {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      line-height: 1.8;
+    }
+
+    .led {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+    }
+    .led-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: blink 2.5s ease-in-out infinite;
+    }
+    .led-dot.busy   { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+    .led-dot.error  { background: var(--red);    box-shadow: 0 0 6px var(--red); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* ── LAYOUT ─────────────────────────────────────────── */
+    .main {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      height: calc(100vh - 52px);
+    }
+
+    /* ── FORM PANEL ─────────────────────────────────────── */
+    .panel-form {
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .block { display: flex; flex-direction: column; gap: 0.55rem; }
+
+    .block-label {
+      font-family: var(--mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .block-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    label {
+      font-family: var(--head);
+      font-weight: 600;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    input[type="number"],
+    select,
+    textarea {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text-bright);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      padding: 0.45rem 0.7rem;
+      border-radius: 2px;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.12s, background 0.12s;
+    }
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      background: var(--bg4);
+    }
+    select option { background: var(--bg3); }
+    textarea { resize: vertical; min-height: 72px; line-height: 1.55; }
+    input[type="number"]::-webkit-inner-spin-button { opacity: 0.4; }
+
+    /* chips */
+    .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .chip {
+      padding: 0.28rem 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.1s;
+    }
+    .chip:hover  { border-color: var(--border-hi); color: var(--text); }
+    .chip.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    /* generate button */
+    .btn-gen {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      font-family: var(--head);
+      font-weight: 900;
+      font-size: 1rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      padding: 0.75rem;
+      border-radius: 2px;
+      cursor: pointer;
+      width: 100%;
+      transition: background 0.12s, transform 0.08s;
+      margin-top: 0.25rem;
+    }
+    .btn-gen:hover   { background: var(--accent2); }
+    .btn-gen:active  { transform: translateY(1px); }
+    .btn-gen:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    /* ── OUTPUT PANEL ───────────────────────────────────── */
+    .panel-out {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .out-header {
+      height: 40px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 1.5rem;
+      gap: 1rem;
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+
+    .out-title {
+      font-family: var(--head);
+      font-weight: 700;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .out-buildname {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--accent);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 400px;
+    }
+
+    .btn-copy {
+      margin-left: auto;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      padding: 0.25rem 0.6rem;
+      cursor: pointer;
+      border-radius: 2px;
+      letter-spacing: 0.08em;
+      transition: all 0.1s;
+    }
+    .btn-copy:hover { border-color: var(--border-hi); color: var(--text); }
+
+    .out-body {
+      flex: 1;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+      padding: 2rem 2.5rem;
+    }
+
+    /* ── EMPTY STATE ────────────────────────────────────── */
+    .empty {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.25rem;
+      color: var(--text-dim);
+      text-align: center;
+    }
+
+    .empty-grid {
+      display: grid;
+      grid-template-columns: repeat(5,1fr);
+      gap: 4px;
+      opacity: 0.07;
+    }
+    .empty-grid span {
+      display: block;
+      width: 18px; height: 18px;
+      border: 1px solid var(--accent);
+      border-radius: 1px;
+    }
+
+    .empty p {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      line-height: 2;
+      text-transform: uppercase;
+    }
+
+    /* ── LOADER ─────────────────────────────────────────── */
+    .loader {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      padding: 1rem 0;
+    }
+    .loader-top {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+    }
+    .bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 18px;
+    }
+    .bars span {
+      display: block;
+      width: 3px;
+      background: var(--accent);
+      border-radius: 1px;
+      animation: barAnim 0.75s ease-in-out infinite;
+    }
+    .bars span:nth-child(1){height:6px;  animation-delay:0s}
+    .bars span:nth-child(2){height:14px; animation-delay:.1s}
+    .bars span:nth-child(3){height:9px;  animation-delay:.2s}
+    .bars span:nth-child(4){height:18px; animation-delay:.3s}
+    .bars span:nth-child(5){height:5px;  animation-delay:.4s}
+    @keyframes barAnim { 0%,100%{opacity:.25;transform:scaleY(.5)} 50%{opacity:1;transform:scaleY(1)} }
+
+    .checks {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+    }
+    .checks .ck {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      opacity: 0;
+      animation: fadeIn 0.3s forwards;
+    }
+    .checks .ck:nth-child(1){animation-delay:.4s}
+    .checks .ck:nth-child(2){animation-delay:.9s}
+    .checks .ck:nth-child(3){animation-delay:1.4s}
+    .checks .ck:nth-child(4){animation-delay:1.9s}
+    .checks .ck:nth-child(5){animation-delay:2.4s}
+    @keyframes fadeIn { to{opacity:1} }
+    .ck-ok  { color: var(--green); }
+    .ck-run { color: var(--yellow); }
+
+    /* ── BUILD OUTPUT ───────────────────────────────────── */
+    .build-out {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      line-height: 1.8;
+      color: var(--text);
+    }
+
+    .build-out h1 {
+      font-family: var(--head);
+      font-weight: 900;
+      font-size: 2rem;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      line-height: 1.1;
+      margin-bottom: 0.25rem;
+    }
+
+    .build-out h2 {
+      font-family: var(--head);
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text-bright);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin: 2rem 0 0.75rem;
+      padding: 0.5rem 0.75rem;
+      background: var(--bg3);
+      border-left: 3px solid var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .build-out h3 {
+      font-family: var(--head);
+      font-weight: 600;
+      font-size: 0.82rem;
+      color: var(--accent2);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin: 1.25rem 0 0.4rem;
+    }
+
+    .build-out p { margin-bottom: 0.45rem; }
+    .build-out p:empty { display: none; }
+
+    .build-out strong { color: var(--text-bright); }
+
+    .build-out ul {
+      margin: 0.3rem 0 0.6rem 0;
+      list-style: none;
+    }
+    .build-out li {
+      padding: 0.18rem 0 0.18rem 1.2rem;
+      position: relative;
+    }
+    .build-out li::before {
+      content: '›';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+    }
+
+    .build-out code {
+      background: var(--bg4);
+      border: 1px solid var(--border-hi);
+      padding: 0.1em 0.4em;
+      border-radius: 2px;
+      font-size: 0.88em;
+      color: var(--accent2);
+    }
+
+    .build-out hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.25rem 0;
+    }
+
+    /* status highlights */
+    .ok   { color: var(--green); font-weight: bold; }
+    .warn { color: var(--yellow); font-weight: bold; }
+    .fail { color: var(--red); font-weight: bold; }
+
+    /* error box */
+    .err-box {
+      border: 1px solid var(--red);
+      background: rgba(239,68,68,.07);
+      padding: 1rem 1.25rem;
+      border-radius: 2px;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--red);
+      line-height: 1.8;
+    }
+
+    /* scrollbars */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* mobile */
+    @media (max-width: 800px) {
+      body { overflow: auto; }
+      .main { grid-template-columns: 1fr; height: auto; }
+      .panel-form { border-right: none; border-bottom: 1px solid var(--border); }
+      .panel-out { height: auto; }
+      .out-body { padding: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════ HEADER ════════════════ -->
+<header>
+  <div class="logo-wrap">
+    <div class="logo">FPV<em>BUILD</em>.GEN</div>
+    <div class="sub">Expert Drone Build Generator</div>
+  </div>
+  <div class="header-sep"></div>
+  <div class="header-meta">
+    Anti-Mistake Engine v1.0<br>
+    Powered by DeepSeek / OpenRouter
+  </div>
+  <div class="led">
+    <div class="led-dot" id="ledDot"></div>
+    <span id="ledLabel">IDLE</span>
+  </div>
+</header>
+
+<!-- ════════════════ MAIN ════════════════ -->
+<div class="main">
+
+  <!-- ── FORM ── -->
+  <div class="panel-form">
+
+    <div class="block">
+      <div class="block-label">Budget</div>
+      <label>Montant (EUR)</label>
+      <input type="number" id="budget" placeholder="ex: 350" min="50" max="3000">
+    </div>
+
+    <div class="block">
+      <div class="block-label">Flight Style</div>
+      <div class="chips" id="styleChips">
+        <div class="chip active" data-v="freestyle">Freestyle</div>
+        <div class="chip" data-v="cinematic">Cinematic</div>
+        <div class="chip" data-v="racing">Racing</div>
+        <div class="chip" data-v="long range">Long Range</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-label">Experience</div>
+      <div class="chips" id="levelChips">
+        <div class="chip" data-v="beginner">Beginner</div>
+        <div class="chip active" data-v="intermediate">Intermediate</div>
+        <div class="chip" data-v="advanced">Advanced</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-label">Video System</div>
+      <div class="chips" id="videoChips">
+        <div class="chip" data-v="analog">Analog</div>
+        <div class="chip active" data-v="DJI O3">DJI O3</div>
+        <div class="chip" data-v="DJI O4">DJI O4</div>
+        <div class="chip" data-v="HDZero">HDZero</div>
+        <div class="chip" data-v="Walksnail Avatar">Walksnail</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-label">Frame Size</div>
+      <div class="chips" id="sizeChips">
+        <div class="chip" data-v="3 inch">3"</div>
+        <div class="chip" data-v="4 inch">4"</div>
+        <div class="chip active" data-v="5 inch">5"</div>
+        <div class="chip" data-v="7 inch">7"</div>
+        <div class="chip" data-v="10 inch">10"</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-label">Battery</div>
+      <div class="chips" id="battChips">
+        <div class="chip" data-v="4S">4S LiPo</div>
+        <div class="chip active" data-v="6S">6S LiPo</div>
+        <div class="chip" data-v="auto">Auto</div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-label">Region</div>
+      <select id="region">
+        <option value="France">France</option>
+        <option value="Europe">Europe (EU)</option>
+        <option value="UK">United Kingdom</option>
+        <option value="USA">USA</option>
+        <option value="worldwide">Worldwide</option>
+      </select>
+    </div>
+
+    <div class="block">
+      <div class="block-label">Preferences</div>
+      <textarea id="prefs" placeholder="Priorité durabilité, moteurs Xing2, GPS optionnel, budget ESC serré, bras renforcés..."></textarea>
+    </div>
+
+    <button class="btn-gen" id="genBtn" onclick="generate()">GENERATE BUILD</button>
+
+  </div>
+
+  <!-- ── OUTPUT ── -->
+  <div class="panel-out">
+    <div class="out-header">
+      <span class="out-title">Build Output</span>
+      <span class="out-buildname" id="buildName">— awaiting input —</span>
+      <button class="btn-copy" id="copyBtn" style="display:none" onclick="copyRaw()">COPY RAW</button>
+    </div>
+    <div class="out-body" id="outBody">
+      <div class="empty">
+        <div class="empty-grid">
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <p>
+          Configure your build<br>
+          on the left panel<br>
+          then hit Generate
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONFIGURATION
+//  → Change WORKER_URL to your deployed Cloudflare Worker URL
+// ═══════════════════════════════════════════════════════════
+const WORKER_URL = "https://YOUR_WORKER.YOUR_SUBDOMAIN.workers.dev";
+
+// ═══════════════════════════════════════════════════════════
+//  SYSTEM PROMPT — not secret, stays in client
+// ═══════════════════════════════════════════════════════════
+const SYSTEM_PROMPT = `You are a senior FPV drone engineer and expert builder (5–7 inch freestyle, cinematic, racing, long range).
+
+Your task is to generate a COMPLETE, REALISTIC FPV DRONE BUILD based on user constraints.
+You must behave like an expert pilot who builds drones in real life, not like an AI.
+
+OUTPUT — Use this EXACT structure (these exact headings):
+
+BUILD NAME: [short evocative name]
+SUMMARY: [2-3 sentence engineering overview]
+
+PART LIST:
+[Table: Component | Part Name | Price EUR]
+Include: Frame, Motors (x4), ESC, Flight Controller, Props, Battery, VTX/Video System, Camera, Receiver, Antenna, Capacitor, Buzzer. Add GPS only if relevant.
+
+WHY EACH PART:
+[Engineering reasoning per component: KV choice, frame material, ESC safety margin, battery C-rating logic, etc.]
+
+COMPATIBILITY CHECK:
+[List every check. Mark each: PASS / WARN / FAIL]
+- Motor KV vs battery voltage (4S/6S)
+- ESC amperage vs estimated max draw x1.2
+- Frame size vs prop diameter
+- Stack mounting pattern (20x20 / 30.5x30.5)
+- FC protocol support (ELRS / Betaflight / DJI)
+- UART availability for all peripherals
+- Video system compatibility
+
+PERFORMANCE:
+- Estimated weight (g)
+- Estimated thrust-to-weight ratio
+- Estimated flight time (minutes)
+- Power draw at hover / 50% / WOT (A)
+
+UPGRADE PATH:
+[First upgrade → second → advanced path. What is the current limiting factor.]
+
+RULES:
+- DO NOT hallucinate fake products
+- Prefer real, well-known FPV components (iFlight, T-Motor, Axisflying, Diatone, Foxeer, DJI, Radiomaster, HappyModel, etc.)
+- No emojis in technical output
+- Be precise, engineering-focused
+- No marketing language
+- If a conflict is found: STOP, explain, propose 2 alternatives, select safest default`;
+
+// ═══════════════════════════════════════════════════════════
+//  CHIP LOGIC
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('.chips').forEach(container => {
+  container.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      container.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    });
+  });
+});
+
+function chipVal(id) {
+  const el = document.querySelector(`#${id} .chip.active`);
+  return el ? el.dataset.v : '';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GENERATE
+// ═══════════════════════════════════════════════════════════
+let rawOutput = '';
+
+async function generate() {
+  const budget = document.getElementById('budget').value.trim();
+  if (!budget) { flashInput('budget'); return; }
+
+  const userMsg = [
+    `Budget: ${budget} EUR`,
+    `Flight style: ${chipVal('styleChips')}`,
+    `Experience: ${chipVal('levelChips')}`,
+    `Video system: ${chipVal('videoChips')}`,
+    `Frame size: ${chipVal('sizeChips')}`,
+    `Battery: ${chipVal('battChips')}`,
+    `Region: ${document.getElementById('region').value}`,
+    `Preferences: ${document.getElementById('prefs').value || 'none'}`,
+    '',
+    'Generate the complete FPV drone build following the required format exactly.'
+  ].join('\n');
+
+  setLed('busy', 'RUNNING');
+  setBtn(true);
+  rawOutput = '';
+  document.getElementById('copyBtn').style.display = 'none';
+  document.getElementById('buildName').textContent = '— generating —';
+
+  showLoader();
+
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user',   content: userMsg }
+        ]
+      })
+    });
+
+    let data;
+    try { data = await res.json(); } catch { throw new Error(`Worker returned non-JSON (HTTP ${res.status})`); }
+
+    if (!res.ok) {
+      const msg = data?.error || JSON.stringify(data);
+      throw new Error(`Worker error ${res.status}: ${msg}`);
+    }
+
+    const text = data?.choices?.[0]?.message?.content;
+    if (!text) throw new Error('Model returned empty content. Check your OpenRouter quota.');
+
+    rawOutput = text;
+    renderBuild(text);
+    setLed('ok', 'DONE');
+
+  } catch (err) {
+    showError(err.message);
+    setLed('error', 'ERROR');
+  }
+
+  setBtn(false);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOADER
+// ═══════════════════════════════════════════════════════════
+function showLoader() {
+  document.getElementById('outBody').innerHTML = `
+    <div class="loader">
+      <div class="loader-top">
+        <div class="bars">
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        ANTI-MISTAKE ENGINE INITIALIZING...
+      </div>
+      <div class="checks">
+        <div class="ck"><span class="ck-run">›</span> Validating component database...</div>
+        <div class="ck"><span class="ck-run">›</span> Checking KV vs voltage compatibility...</div>
+        <div class="ck"><span class="ck-run">›</span> Running ESC safety margin calculation...</div>
+        <div class="ck"><span class="ck-run">›</span> Verifying stack mounting patterns...</div>
+        <div class="ck"><span class="ck-run">›</span> Estimating performance envelope...</div>
+      </div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER BUILD OUTPUT
+// ═══════════════════════════════════════════════════════════
+function renderBuild(text) {
+  const name = (text.match(/^BUILD NAME:\s*(.+)/m) || [])[1]?.trim() || 'Build Complete';
+  document.getElementById('buildName').textContent = name.substring(0, 60);
+  document.getElementById('copyBtn').style.display = '';
+
+  document.getElementById('outBody').innerHTML =
+    `<div class="build-out">${md(text)}</div>`;
+}
+
+function md(t) {
+  let h = esc(t);
+
+  // Section headings (exact format from system prompt)
+  const sections = ['BUILD NAME','SUMMARY','PART LIST','WHY EACH PART','COMPATIBILITY CHECK','PERFORMANCE','UPGRADE PATH'];
+  sections.forEach(s => {
+    const re = new RegExp(`^(${s}):\\s*`, 'gm');
+    h = h.replace(re, `<h2>${s}</h2>`);
+  });
+
+  // Standard headings
+  h = h.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  h = h.replace(/^## (.+)$/gm,  '<h2>$1</h2>');
+  h = h.replace(/^# (.+)$/gm,   '<h1>$1</h1>');
+
+  // Status keywords
+  h = h.replace(/\bPASS\b/g, '<span class="ok">PASS</span>');
+  h = h.replace(/\bOK\b/g,   '<span class="ok">OK</span>');
+  h = h.replace(/\bWARN\b/g, '<span class="warn">WARN</span>');
+  h = h.replace(/\bFAIL\b/g, '<span class="fail">FAIL</span>');
+
+  // Bold
+  h = h.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+  // Inline code
+  h = h.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Horizontal rule
+  h = h.replace(/^---+$/gm, '<hr>');
+
+  // Bullet lists
+  h = h.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
+  h = h.replace(/(<li>[\s\S]*?<\/li>)(\n(?!<li>)|$)/g, (m, list) => `<ul>${list}</ul>`);
+
+  // Numbered lists
+  h = h.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+
+  // Paragraphs
+  h = h.split(/\n{2,}/).map(block => {
+    if (/^<(h[123]|ul|ol|hr|li)/.test(block.trim())) return block;
+    return `<p>${block.replace(/\n/g, '<br>')}</p>`;
+  }).join('\n');
+
+  return h;
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ERROR
+// ═══════════════════════════════════════════════════════════
+function showError(msg) {
+  document.getElementById('buildName').textContent = '— error —';
+  document.getElementById('outBody').innerHTML = `
+    <div class="err-box">
+      ERROR: ${esc(msg)}<br><br>
+      Check that WORKER_URL in the HTML source points to your<br>
+      deployed Cloudflare Worker, and that the Worker is live.
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  COPY
+// ═══════════════════════════════════════════════════════════
+function copyRaw() {
+  navigator.clipboard.writeText(rawOutput).then(() => {
+    const b = document.getElementById('copyBtn');
+    b.textContent = 'COPIED';
+    setTimeout(() => b.textContent = 'COPY RAW', 1500);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════════════════
+function setBtn(disabled) {
+  const b = document.getElementById('genBtn');
+  b.disabled = disabled;
+  b.textContent = disabled ? 'GENERATING...' : 'GENERATE BUILD';
+}
+
+function setLed(state, label) {
+  const dot = document.getElementById('ledDot');
+  dot.className = 'led-dot' + (state === 'ok' ? '' : ` ${state}`);
+  document.getElementById('ledLabel').textContent = label;
+}
+
+function flashInput(id) {
+  const el = document.getElementById(id);
+  el.style.borderColor = 'var(--red)';
+  el.focus();
+  setTimeout(() => el.style.borderColor = '', 1000);
+}
+</script>
+
+</body>
+</html>
