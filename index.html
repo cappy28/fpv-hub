@@ -1,0 +1,309 @@
+FPV HUNT — VERCEL STARTER (PHASE 1)
+
+This is a production-grade starting point for a premium FPV platform (Apple / Linear style).
+
+Tech:
+
+Next.js (App Router)
+
+TypeScript
+
+TailwindCSS
+
+Minimal clean UI system
+
+
+====================================================
+
+1. PROJECT STRUCTURE ====================================================
+
+
+
+fpv-hunt/ ├── app/ │   ├── layout.tsx │   ├── page.tsx │   ├── builds/page.tsx │   ├── build/[id]/page.tsx │   └── globals.css ├── components/ │   ├── Navbar.tsx │   ├── BuildCard.tsx │   └── Container.tsx ├── lib/ │   └── builds.ts ├── styles/ │   └── theme.ts ├── tailwind.config.ts └── package.json
+
+==================================================== 2. GLOBAL LAYOUT
+
+// app/layout.tsx
+
+export default function RootLayout({ children }: { children: React.ReactNode }) { return ( <html lang="en"> <body className="bg-neutral-950 text-neutral-100"> <div className="min-h-screen flex flex-col"> {children} </div> </body> </html> ); }
+
+==================================================== 3. HOME PAGE (APPLE-STYLE LANDING)
+
+// app/page.tsx
+
+import Link from "next/link"; import { Container } from "@/components/Container";
+
+export default function Home() { return ( <Container> <div className="py-24 space-y-10"> <h1 className="text-5xl font-semibold tracking-tight"> FPV Hunt </h1> <p className="text-neutral-400 max-w-xl"> Build, compare and optimize FPV drones with intelligent compatibility logic and price insights. </p>
+
+<div className="flex gap-4">
+      <Link
+        href="/builds"
+        className="px-5 py-3 rounded-xl bg-white text-black font-medium"
+      >
+        Explore builds
+      </Link>
+      <Link
+        href="/builds"
+        className="px-5 py-3 rounded-xl border border-neutral-800"
+      >
+        Start building
+      </Link>
+    </div>
+  </div>
+</Container>
+
+); }
+
+==================================================== 4. BUILDS PAGE
+
+// app/builds/page.tsx
+
+import { BuildCard } from "@/components/BuildCard"; import { getMockBuilds } from "@/lib/builds"; import { Container } from "@/components/Container";
+
+export default function BuildsPage() { const builds = getMockBuilds();
+
+return ( <Container> <div className="py-16 space-y-8"> <h2 className="text-3xl font-semibold">Builds</h2>
+
+<div className="grid md:grid-cols-2 gap-4">
+      {builds.map((b) => (
+        <BuildCard key={b.id} build={b} />
+      ))}
+    </div>
+  </div>
+</Container>
+
+); }
+
+==================================================== 5. BUILD CARD COMPONENT
+
+// components/BuildCard.tsx
+
+export function BuildCard({ build }: any) { return ( <div className="p-5 rounded-2xl border border-neutral-900 bg-neutral-900/40 hover:bg-neutral-900/60 transition"> <h3 className="text-lg font-medium">{build.name}</h3> <p className="text-sm text-neutral-400 mt-1"> {build.style} • {build.budget} </p>
+
+<div className="mt-4 text-xs text-neutral-500">
+    Compatibility: {build.compatibility}%
+  </div>
+</div>
+
+); }
+
+==================================================== 6. MOCK DATA (START SIMPLE)
+
+// lib/builds.ts
+
+export function getMockBuilds() { return [ { id: "1", name: "Freestyle Beast 5-inch", style: "Freestyle", budget: "450€", compatibility: 92, }, { id: "2", name: "Cinematic Long Range", style: "Cinematic", budget: "700€", compatibility: 88, }, ]; }
+
+==================================================== 7. CONTAINER (CLEAN LAYOUT SYSTEM)
+
+// components/Container.tsx
+
+export function Container({ children }: { children: React.ReactNode }) { return ( <div className="max-w-5xl mx-auto px-6"> {children} </div> ); }
+
+==================================================== 8. GLOBAL STYLE
+
+/* app/globals.css */
+
+@tailwind base; @tailwind components; @tailwind utilities;
+
+body { font-family: Inter, system-ui, sans-serif; }
+
+==================================================== 9. DESIGN RULES (IMPORTANT)
+
+No emojis in UI
+
+No neon colors
+
+No AI-looking design
+
+Minimal Apple / Linear style
+
+Strong typography hierarchy
+
+Neutral dark theme
+
+Subtle borders
+
+Soft hover states
+
+
+==================================================== 10. NEXT STEP (PHASE 2)
+
+We will add:
+
+real build generator (form)
+
+compatibility engine
+
+AI system (OpenRouter / DeepSeek)
+
+Supabase database
+
+real product logic
+
+
+==================================================== DEPLOY
+
+This project is ready for Vercel:
+
+1. push to GitHub
+
+
+2. import into Vercel
+
+
+3. deploy automatically
+
+
+
+==================================================== PHASE 2 — CORE INTELLIGENCE LAYER (BUILD GENERATOR + BASIC ENGINE)
+
+This phase turns the static UI into a real FPV intelligence system.
+
+
+---
+
+1. BUILD GENERATOR FORM (UI)
+
+
+
+
+---
+
+Create a new page:
+
+// app/build-generator/page.tsx
+
+'use client';
+
+import { useState } from 'react'; import { Container } from '@/components/Container';
+
+export default function BuildGenerator() { const [budget, setBudget] = useState(500); const [style, setStyle] = useState('freestyle');
+
+return ( <Container> <div className="py-16 space-y-6"> <h1 className="text-3xl font-semibold">Build Generator</h1>
+
+<div className="space-y-4">
+      <input
+        type="number"
+        value={budget}
+        onChange={(e) => setBudget(Number(e.target.value))}
+        className="w-full p-3 rounded-xl bg-neutral-900 border border-neutral-800"
+        placeholder="Budget"
+      />
+
+      <select
+        value={style}
+        onChange={(e) => setStyle(e.target.value)}
+        className="w-full p-3 rounded-xl bg-neutral-900 border border-neutral-800"
+      >
+        <option value="freestyle">Freestyle</option>
+        <option value="cinematic">Cinematic</option>
+        <option value="racing">Racing</option>
+        <option value="longrange">Long Range</option>
+      </select>
+
+      <button
+        onClick={() => generateBuild()}
+        className="px-5 py-3 rounded-xl bg-white text-black"
+      >
+        Generate Build
+      </button>
+    </div>
+  </div>
+</Container>
+
+);
+
+async function generateBuild() { const res = await fetch('/api/build/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ budget, style }) });
+
+const data = await res.json();
+console.log(data);
+
+} }
+
+
+---
+
+2. API ROUTE (MOCK GENERATOR)
+
+
+
+
+---
+
+// app/api/build/generate/route.ts
+
+import { NextResponse } from 'next/server';
+
+export async function POST(req: Request) { const body = await req.json();
+
+const { budget, style } = body;
+
+const mockBuild = { id: 'gen-1', name: ${style} FPV Build, budget, parts: [ { name: '5 inch Frame', category: 'frame' }, { name: '2207 1750KV Motor', category: 'motor' }, { name: '45A ESC', category: 'esc' } ], compatibility: 90 };
+
+return NextResponse.json(mockBuild); }
+
+
+---
+
+3. BASIC INTELLIGENCE ENGINE
+
+
+
+
+---
+
+// lib/engine/basic-compatibility.ts
+
+export function checkCompatibility(parts: any[]) { const warnings = [];
+
+const hasFrame5inch = parts.some(p => p.name.includes('5')); const hasMotor = parts.some(p => p.category === 'motor');
+
+if (hasFrame5inch && !hasMotor) { warnings.push('Frame 5 inch requires motors'); }
+
+return { valid: warnings.length === 0, warnings }; }
+
+
+---
+
+4. NAVIGATION UPDATE
+
+
+
+
+---
+
+Add link in home page:
+
+<Link href="/build-generator" className="px-5 py-3 rounded-xl border">
+  AI Build Generator
+</Link>
+---
+
+5. WHAT THIS PHASE ADDS
+
+
+
+
+---
+
+Real input system
+
+Build generation endpoint
+
+First compatibility logic
+
+Movement from static → interactive app
+
+
+==================================================== NEXT PHASE PREVIEW (PHASE 3)
+
+real FPV compatibility engine (KV, ESC, voltage)
+
+Supabase integration
+
+real parts database
+
+AI integration (OpenRouter / DeepSeek)
+
+
+====================================================
